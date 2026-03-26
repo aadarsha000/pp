@@ -7,9 +7,8 @@ from decouple import config
 
 DEBUG = True
 # Keep dev friendly defaults; production should set this explicitly.
-ALLOWED_HOSTS = config(
-    "ALLOWED_HOSTS", default="localhost,127.0.0.1,[::1]"
-).split(",")
+ALLOWED_HOSTS_RAW = config("ALLOWED_HOSTS", default="localhost,127.0.0.1,[::1]")
+ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS_RAW.split(",") if h.strip()]
 
 
 
