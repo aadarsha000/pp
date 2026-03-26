@@ -11,7 +11,9 @@ from rest_framework.decorators import action
 
 
 class JobPostingViewSet(viewsets.ModelViewSet):
-    queryset = JobPosting.objects.select_related('department').all()
+    queryset = JobPosting.objects.select_related('department').annotate(
+            applicant_count=Count('job_applications') 
+        )
     serializer_class = JobPostingSerializer
     permission_classes = [IsRecruiterOrAdmin]
     filter_backends = [DjangoFilterBackend]
