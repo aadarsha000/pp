@@ -12,7 +12,7 @@ class CandidateSerializer(serializers.ModelSerializer):
 
 class ApplicationSerializer(serializers.ModelSerializer):
     candidate = CandidateSerializer()
-    job = JobPostingSerializer()
+    # job = JobPostingSerializer()
     class Meta:
         model = Application
         fields = ['id', 'candidate', 'job', 'stage', 'rejection_reason']
