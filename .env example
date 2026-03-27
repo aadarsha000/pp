@@ -1,0 +1,22 @@
+
+SETTINGS_KEY=local
+SECRET_KEY=2d$4mwd!nkscn&^7h7-qm9gg((dh-s@y-@s(&4-m!!0d%64v%+
+DEBUG=True  
+# Set DEBUG=False in production
+ALLOWED_HOSTS=*
+
+# PostgreSQL Configuration
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+POSTGRES_HOST_PORT=5434
+POSTGRES_DB=hireflow
+
+DOCKERFILE=Dockerfile
+
+REDIS_PORT=6380
+
+
+CELERY_BROKER_URL=redis://redis-hireflow:6379/0
+CELERY_RESULT_BACKEND=redis://redis-hireflow:6379/0
