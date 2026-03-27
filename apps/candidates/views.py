@@ -1,16 +1,16 @@
 from django.shortcuts import render
 
-from candidates.models import Application, Candidate, Notification, Document
+from candidates.models import Application, Candidate, Document
 from candidates.serializers import (
     ApplicationSerializer,
     ApplicationStageUpdateSerializer,
     CandidateSerializer,
     ApplicationCreateSerializer,
-    NotificationSerializer,
     DocumentSerializer
 )
 from candidates.filters import ApplicationFilter
 from users.permissions import IsRecruiterOrAdmin
+from users.models import Role
 from rest_framework import viewsets, status
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
@@ -33,12 +33,12 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return ApplicationCreateSerializer
-        if self.action == 'update_stage':
+        if self.action == 'stage':
             return ApplicationStageUpdateSerializer
         return ApplicationSerializer
 
-    @action(detail=True, methods=['patch'])
-    def update_stage(self, request, pk=None):
+    @action(detail=True, methods=['patch'], url_path='stage')
+    def stage(self, request, pk=None):
         application = self.get_object()
         serializer = self.get_serializer(application, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -64,7 +64,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         except Document.DoesNotExist:
             return Response({"detail": "Document not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        is_hr_admin = request.user.role == 'HR_Admin'
+        is_hr_admin = request.user.role == Role.ADMIN
         if not is_hr_admin and document.uploaded_by_id != request.user.id:
             return Response(
                 {"detail": "Only HR Admin or the uploader can delete this document."},
@@ -84,15 +84,3 @@ class CandidateViewSet(viewsets.ModelViewSet):
     permission_classes = [IsRecruiterOrAdmin]
     http_method_names = ['get', 'post', 'patch', 'delete']
 
-class NotificationViewSet(viewsets.ModelViewSet):
-    queryset = Notification.objects.all()
-    serializer_class = NotificationSerializer
-    permission_classes = [IsRecruiterOrAdmin]
-    http_method_names = ['get', 'patch']
-
-    @action(detail=True, methods=['patch'])
-    def mark_as_read(self, request, pk=None):
-        notification = self.get_object()
-        notification.is_read = True 
-        notification.save()
-        return Response({"id": notification.id, "is_read": notification.is_read})

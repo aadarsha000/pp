@@ -37,6 +37,7 @@ class PromoteUserView(generics.UpdateAPIView):
 
 class LogoutView(generics.GenericAPIView):
     serializer_class = LogoutSerializer
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)

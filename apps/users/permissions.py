@@ -1,22 +1,27 @@
 from rest_framework import permissions
+from users.models import Role
 
 class IsHRAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'HR_Admin'
+        return request.user.is_authenticated and request.user.role == Role.ADMIN
 
 class IsRecruiterOrAdmin(permissions.BasePermission):
     
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ['Recruiter', 'HR_Admin']
+        return request.user.is_authenticated and request.user.role in [Role.RECRUITER, Role.ADMIN]
 
     def has_object_permission(self, request, view, obj):
-        if request.user.role == 'HR_Admin':
+        if request.user.role == Role.ADMIN:
             return True
-        return obj.created_by == request.user
+        for owner_attr in ['created_by', 'recruiter', 'assigned_recruiter']:
+            owner = getattr(obj, owner_attr, None)
+            if owner == request.user:
+                return True
+        return False
 
 class IsAssignedInterviewer(permissions.BasePermission):
     
     def has_object_permission(self, request, view, obj):
-        return obj.interviewer == request.user
+        return request.user.is_authenticated and request.user.role == Role.INTERVIEWER and obj.interviewer == request.user
 
 
