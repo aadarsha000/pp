@@ -65,6 +65,7 @@ DJANGO_APP = [
 ]
 
 THIRD_PARTY_APP = [
+    'channels',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -235,4 +236,18 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,                 # Enable rotation
     'BLACKLIST_AFTER_ROTATION': True,              # Blacklist old refresh tokens when a new one is issued
     'AUTH_HEADER_TYPES': ('Bearer',),              # Use 'Bearer' in Authorization header
+}
+
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],  # Update for production
+            # For production with auth:
+            # 'hosts': [{'address': ('rediss://:password@redis-host:6380/1')}],
+            'capacity': 1500,
+            'expiry': 10,
+        },
+    },
 }

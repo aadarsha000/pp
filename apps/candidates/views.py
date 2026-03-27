@@ -57,6 +57,13 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(application, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        # Trigger notification asynchronously
+        if from_stage != new_stage and application.job.created_by_id:
+            task_notify_stage_changed.delay(
+                application_id=application.id,
+                from_stage=from_stage,
+                to_stage=new_stage
+            )
         return Response(serializer.data)
 
     @extend_schema(summary="Upload Application Document", description="Upload a document to an application with MIME/size and document-count validation.")
