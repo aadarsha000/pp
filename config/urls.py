@@ -20,7 +20,7 @@ urlpatterns = [
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     
     # ReDoc
-    path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
 
     path("auth/", include("users.urls")),
@@ -28,6 +28,7 @@ urlpatterns = [
     path("", include("candidates.urls")),
     path("", include("interviews.urls")),
     path("", include("notification.urls")),
+    path("", include("reports.urls")),
     
     ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

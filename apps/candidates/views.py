@@ -20,6 +20,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.exceptions import NotFound, PermissionDenied
 from django.db.models import OuterRef, Subquery
 from drf_spectacular.utils import extend_schema
+from notification.tasks import task_notify_new_application, task_notify_stage_changed
 
 # Create your views here.
 class ApplicationViewSet(viewsets.ModelViewSet):
@@ -50,13 +51,26 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             return ApplicationStageUpdateSerializer
         return ApplicationSerializer
 
+    def perform_create(self, serializer):
+        application = serializer.save()
+        task_notify_new_application.delay(application.id)
+
     @extend_schema(summary="Update Application Stage", description="Advance application stage sequentially and logs the transition.")
     @action(detail=True, methods=['patch'], url_path='stage')
     def stage(self, request, pk=None):
         application = self.get_object()
+        from_stage = application.stage
         serializer = self.get_serializer(application, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        new_stage = serializer.instance.stage
+        # Trigger notification asynchronously
+        if from_stage != new_stage and application.job.created_by_id:
+            task_notify_stage_changed.delay(
+                application_id=application.id,
+                from_stage=from_stage,
+                to_stage=new_stage
+            )
         return Response(serializer.data)
 
     @extend_schema(summary="Upload Application Document", description="Upload a document to an application with MIME/size and document-count validation.")
@@ -110,6 +124,5 @@ class CandidateViewSet(viewsets.ModelViewSet):
                 latest_stage=Subquery(latest_application.values('stage')[:1]),
                 latest_job_id=Subquery(latest_application.values('job_id')[:1]),
             )
-            .prefetch_related('applications')
+            .prefetch_related('candidate_applications')
         )
-

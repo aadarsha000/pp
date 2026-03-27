@@ -41,27 +41,34 @@ def _normalize_details(data):
 
 def _code_for_exception(exc, status_code):
     if isinstance(exc, ValidationError):
-        return "validation_error"
+        return "VALIDATION_ERROR"
     if isinstance(exc, NotAuthenticated):
-        return "not_authenticated"
+        return "NOT_AUTHENTICATED"
     if isinstance(exc, PermissionDenied):
-        return "permission_denied"
+        return "PERMISSION_DENIED"
     if isinstance(exc, NotFound):
-        return "not_found"
+        return "NOT_FOUND"
     if isinstance(exc, Throttled):
-        return "throttled"
+        return "THROTTLED"
     if isinstance(exc, APIException):
         # Includes our custom 409 conflict exception
         if status_code == 409:
-            return "conflict"
-        return "api_error"
-    return "api_error"
+            return "CONFLICT"
+        return "API_ERROR"
+    return "API_ERROR"
 
 
 def custom_exception_handler(exc, context):
     response = drf_exception_handler(exc, context)
     if response is None:
-        return response
+        return Response(
+            {
+                "error": "Internal server error",
+                "code": "INTERNAL_SERVER_ERROR",
+                "details": {"non_field_errors": [str(exc)]},
+            },
+            status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
     status_code = response.status_code
     code = _code_for_exception(exc, status_code)
@@ -102,4 +109,3 @@ def custom_exception_handler(exc, context):
         },
         status=status_code,
     )
-

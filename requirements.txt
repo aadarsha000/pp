@@ -3,10 +3,13 @@ asgiref==3.11.1
 attrs==26.1.0
 billiard==4.2.4
 celery==5.6.2
+channels==4.3.2
+channels_redis==4.3.0
 click==8.3.1
 click-didyoumean==0.3.1
 click-plugins==1.1.1.2
 click-repl==0.3.0
+daphne==4.2.1
 Django==6.0.3
 django-celery==3.1.17
 django-filter==25.2
@@ -20,6 +23,7 @@ inflection==0.5.1
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 kombu==5.6.2
+msgpack==1.1.2
 packaging==26.0
 pillow==12.1.1
 prometheus_client==0.24.1
@@ -42,3 +46,4 @@ tzlocal==5.3.1
 uritemplate==4.2.0
 vine==5.1.0
 wcwidth==0.6.0
+websockets==16.0
