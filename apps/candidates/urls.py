@@ -10,5 +10,7 @@ router.register(r'candidates', CandidateViewSet, basename='candidates')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('jobs/<int:job_pk>/applications/', ApplicationViewSet.as_view({'get': 'list'}), name='job-applications-list'),
+
 
 ]

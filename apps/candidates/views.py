@@ -11,12 +11,17 @@ from rest_framework.decorators import action
 
 # Create your views here.
 class ApplicationViewSet(viewsets.ModelViewSet):
-    queryset = Application.objects.select_related('candidate', 'job').prefetch_related('logs')
     serializer_class = ApplicationSerializer
     permission_classes = [IsRecruiterOrAdmin]
     filter_backends = [DjangoFilterBackend]
     filterset_class = ApplicationFilter
     http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def get_queryset(self):
+        if 'job_pk' in self.kwargs:
+            return Application.objects.filter(job_id=self.kwargs['job_pk'])
+        return Application.objects.select_related('candidate', 'job').prefetch_related('logs')
+
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -32,6 +37,10 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+
+
 
 class CandidateViewSet(viewsets.ModelViewSet):
     queryset = Candidate.objects.prefetch_related('applications')
