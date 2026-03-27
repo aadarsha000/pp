@@ -179,7 +179,18 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
-    # 'EXCEPTION_HANDLER': 'core.exceptions.custom_exception_handler',
+  
+    # Global DRF exception formatting
+    'EXCEPTION_HANDLER': 'config.exceptions.custom_exception_handler',
+    # Throttling
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.AnonRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'user': '200/min',
+        'anon': '30/min',
+    },
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
@@ -204,7 +215,13 @@ CELERY_BEAT_SCHEDULE = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        # Use Docker service name by default to avoid localhost connectivity issues.
+        "LOCATION": "redis://%s:%s/%s"
+        % (
+            config("REDIS_CACHE_HOST", default="redis-hireflow"),
+            config("REDIS_CACHE_PORT", default=6379, cast=int),
+            config("REDIS_CACHE_DB", default=1, cast=int),
+        ),
     }
 }
 
