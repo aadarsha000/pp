@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 from datetime import timedelta
+
+from candidates.models import Application
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 class InterviewType(models.TextChoices):
@@ -15,8 +17,8 @@ class InterviewStatus(models.TextChoices):
     CANCELLED = 'Cancelled', 'Cancelled'
 
 class Interview(models.Model):
-    application = models.ForeignKey('Application', on_delete=models.CASCADE, related_name='interviews')
-    interviewers = models.ManyToManyField(settings.AUTH_USER_MODEL, limit_choices_to={'role': 'Interviewer'})
+    application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='interviews')
+    interviewers = models.ManyToManyField(settings.AUTH_USER_MODEL, limit_choices_to={'role': 'interviewer'})
     scheduled_at = models.DateTimeField()
     duration_minutes = models.PositiveIntegerField(default=60)
     location_or_link = models.CharField(max_length=255)
@@ -29,7 +31,7 @@ class Interview(models.Model):
         return self.scheduled_at + timedelta(minutes=self.duration_minutes)
     
     def __str__(self):
-        return f"Interview for {self.application.candidate.name} on {self.scheduled_at}"
+        return f"Interview for {self.application.candidate.full_name} on {self.scheduled_at}"
 
 
 class FeedbackRubric(models.Model):

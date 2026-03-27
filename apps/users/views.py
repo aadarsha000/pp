@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import generics, status, views
 from rest_framework.permissions import AllowAny
 
-from apps.users.permissions import IsHRAdmin
+from users.permissions import IsHRAdmin
 from config.utils import success_response, error_response
 
 from .serializers import LogoutSerializer, UserProfileSerializer, UserRegistrationSerializer, UserRoleUpdateSerializer
