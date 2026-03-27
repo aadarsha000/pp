@@ -26,7 +26,9 @@ urlpatterns = [
     path("auth/", include("users.urls")),
     path("", include("jobs.urls")),
     path("", include("candidates.urls")),
-
+    path("", include("interviews.urls")),
+    path("", include("notification.urls")),
+    
     ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
