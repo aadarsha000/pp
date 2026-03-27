@@ -7,19 +7,19 @@ from .serializers import InterviewSerializer, InterviewFeedbackSerializer
 from users.permissions import IsAssignedInterviewer
 from django.utils import timezone
 from users.models import Role
+from drf_spectacular.utils import extend_schema
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
 
 class InterviewViewSet(viewsets.ModelViewSet):
     queryset = Interview.objects.select_related('application__candidate').prefetch_related('interviewers')
     serializer_class = InterviewSerializer
 
+    @extend_schema(summary="My Schedule", description="Returns upcoming scheduled interviews for the authenticated interviewer.")
     @action(detail=False, methods=['get'], url_path='my-schedule')
     def my_schedule(self, request):
         if request.user.role != Role.INTERVIEWER:
-            return Response(
-                {"detail": "Only interviewers can access my-schedule."},
-                status=status.HTTP_403_FORBIDDEN
-            )
+            raise PermissionDenied("Only interviewers can access my-schedule.")
         interviews = Interview.objects.filter(
             interviewers=request.user,
             scheduled_at__gte=timezone.now(),
@@ -47,27 +47,30 @@ class InterviewViewSet(viewsets.ModelViewSet):
         ]
         return Response(data)
 
+    @extend_schema(summary="Cancel Interview", description="Cancels an interview. Completed interviews cannot be cancelled.")
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
         interview = self.get_object()
         if interview.status == InterviewStatus.COMPLETED:
-            return Response({"error": "Cannot cancel a completed interview."}, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError("Cannot cancel a completed interview.")
         
         interview.status = InterviewStatus.CANCELLED
         interview.save()
         return Response({"status": "Interview cancelled"})
 
 
+    @extend_schema(summary="Complete Interview", description="Marks an interview as completed. Only assigned interviewers can do this.")
     @action(detail=True, methods=['post'], permission_classes=[IsAssignedInterviewer])
     def complete(self, request, pk=None):
         interview = self.get_object()
         if interview.status == InterviewStatus.CANCELLED:
-            return Response({"error": "Cannot complete a cancelled interview."}, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError("Cannot complete a cancelled interview.")
         interview.status = InterviewStatus.COMPLETED
         interview.save()
         return Response({"status": "Interview marked as completed"})
 
 
+    @extend_schema(summary="Submit Feedback", description="Submit interview feedback with scores for all rubric items.")
     @action(detail=True, methods=['post'], url_path='feedback', permission_classes=[IsAssignedInterviewer])
     def feedback(self, request, pk=None):
         interview = self.get_object()
@@ -83,6 +86,7 @@ class InterviewViewSet(viewsets.ModelViewSet):
         )
 
 
+    @extend_schema(summary="Interview Feedback", description="Returns all feedback for the interview along with per-rubric average scores.")
     @action(detail=True, methods=['get'], url_path='feedback')
     def list_feedback(self, request, pk=None):
         interview = self.get_object()
