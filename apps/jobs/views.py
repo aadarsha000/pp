@@ -3,9 +3,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 
-from apps.users.permissions import IsRecruiterOrAdmin
-from .models import JobPosting
-from .serializers import JobPostingListSerializer, JobPostingDetailSerializer, JobPostingSerializer
+from users.permissions import IsRecruiterOrAdmin
+from .models import JobPosting, Department
+from .serializers import DepartmentSerializer, JobPostingListSerializer, JobPostingDetailSerializer, JobPostingSerializer
 from .filters import JobPostingFilter
 from rest_framework.decorators import action
 
@@ -18,6 +18,7 @@ class JobPostingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsRecruiterOrAdmin]
     filter_backends = [DjangoFilterBackend]
     filterset_class = JobPostingFilter
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -65,3 +66,10 @@ class JobPostingViewSet(viewsets.ModelViewSet):
 
         jobs.update(status=new_status)
         return Response({"message": f"Updated {jobs.count()} jobs to {new_status}"})
+
+
+class DepartmentViewSet(viewsets.ModelViewSet):
+    queryset = Department.objects.all()
+    serializer_class = DepartmentSerializer
+    permission_classes = [IsRecruiterOrAdmin]
+    http_method_names = ['get', 'post', 'patch', 'delete']
