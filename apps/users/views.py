@@ -1,10 +1,8 @@
-from django.shortcuts import render
-from rest_framework import generics, status, views
+from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 
 from users.permissions import IsHRAdmin
-from config.utils import success_response, error_response
-
 from .serializers import LogoutSerializer, UserProfileSerializer, UserRegistrationSerializer, UserRoleUpdateSerializer
 from .models import CustomUser
 
@@ -43,4 +41,4 @@ class LogoutView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return success_response({"message": "Successfully logged out."}, status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)

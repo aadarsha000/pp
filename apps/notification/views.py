@@ -9,16 +9,24 @@ from rest_framework.filters import OrderingFilter
 from drf_spectacular.utils import extend_schema
 
 
+class NotificationCursorPagination(CursorPagination):
+    page_size = 20
+    ordering = ("is_read", "-created_at", "-id")
+
+
 class NotificationViewSet(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
     permission_classes = [IsRecruiterOrAdmin]
-    http_method_names = ['get', 'patch']
-    pagination_class = CursorPagination
+    http_method_names = ['get', 'patch', 'post']
+    pagination_class = NotificationCursorPagination
     ordering_fields = ['created_at']
-    ordering = 'created_at'
+    ordering = '-created_at'
 
     filter_backends = [OrderingFilter]
+
+    def get_queryset(self):
+        return Notification.objects.filter(recipient=self.request.user).order_by("is_read", "-created_at")
 
     @extend_schema(summary="Mark Notification as Read", description="Marks a notification as read.")
     @action(detail=True, methods=['patch'], serializer_class=None)

@@ -23,10 +23,9 @@ def debug_task(self):
 
 from celery.schedules import crontab
 
-beat_schedule = {
+app.conf.beat_schedule = {
     'send-interview-reminders-daily': {
-        'task': 'notification.tasks.task_notify_interview_reminder',
-        'schedule': crontab(hour=9, minute=0),  # Run daily at 9 AM
-        # Note: The task itself filters interviews scheduled for next 24h
+        'task': 'notification.tasks.dispatch_interview_reminders',
+        'schedule': crontab(hour=7, minute=0),
     },
 }
