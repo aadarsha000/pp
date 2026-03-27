@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.core.cache import cache
 import uuid
 
-from .models import Application, Stage, ApplicationStageLog
+from candidates.models import Application, ApplicationStageLog, Stage
 from notification.models import Notification
 
 
