@@ -44,8 +44,9 @@ class NotificationViewSet(viewsets.ModelViewSet):
         detail=False, methods=["post"], url_path="mark-all-read", serializer_class=None
     )
     def mark_all_read(self, request):
-        updated_count, _ = Notification.objects.filter(
-            recipient=request.user, is_read=False
+        updated_count = Notification.objects.filter(
+            recipient=request.user,
+            is_read=False,
         ).update(is_read=True)
 
         return Response(
