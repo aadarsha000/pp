@@ -27,8 +27,15 @@ def notify_offer_stage(sender, instance, created, **kwargs):
     previous_stage = getattr(instance, "_previous_stage", None)
     if instance.stage == Stage.OFFER and previous_stage != Stage.OFFER:
         Notification.objects.create(
-            user=instance.job.created_by,
-            message=f"Candidate {instance.candidate.full_name} has reached the Offer stage!",
+            recipient=instance.job.created_by,
+            event_type="stage_changed",
+            payload={
+                "event": "stage_changed",
+                "candidate_name": instance.candidate.full_name,
+                "from_stage": previous_stage,
+                "to_stage": Stage.OFFER,
+                "application_id": instance.id,
+            },
         )
 
 

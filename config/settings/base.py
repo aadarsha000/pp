@@ -61,7 +61,7 @@ DJANGO_APP = [
     'candidates',
     'notification',
     'interviews',
-    
+    'reports',
 ]
 
 THIRD_PARTY_APP = [
@@ -208,7 +208,7 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='admin@example.com')
 
 CELERY_BEAT_SCHEDULE = {
     'send-daily-reminders': {
-        'task': 'interviews.tasks.send_interviewer_reminders',
+        'task': 'notification.tasks.dispatch_interview_reminders',
         'schedule': crontab(hour=7, minute=0),
     },
 }
@@ -243,9 +243,10 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],  # Update for production
-            # For production with auth:
-            # 'hosts': [{'address': ('rediss://:password@redis-host:6380/1')}],
+            'hosts': [(
+                config("REDIS_CHANNEL_HOST", default="redis-hireflow"),
+                config("REDIS_CHANNEL_PORT", default=6379, cast=int),
+            )],
             'capacity': 1500,
             'expiry': 10,
         },
