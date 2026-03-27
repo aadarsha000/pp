@@ -4,7 +4,7 @@ from django.core.cache import cache
 import uuid
 
 from candidates.models import Application, ApplicationStageLog, Stage
-from notification.models import Notification
+from apps.notification.models import Notification
 
 
 @receiver(pre_save, sender=Application)
@@ -14,7 +14,7 @@ def capture_previous_stage(sender, instance, **kwargs):
         return
     instance._previous_stage = (
         Application.objects.filter(pk=instance.pk)
-        .values_list('stage', flat=True)
+        .values_list("stage", flat=True)
         .first()
     )
 
