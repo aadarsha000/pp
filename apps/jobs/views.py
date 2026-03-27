@@ -11,7 +11,6 @@ from .models import JobPosting, Department, Status
 from .serializers import (
     DepartmentSerializer,
     JobPostingListSerializer,
-    JobPostingListSerializerV2,
     JobPostingDetailSerializer,
     JobPostingSerializer,
 )
@@ -35,8 +34,6 @@ class JobPostingViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list':
-            if getattr(self.request, "version", None) == "v2":
-                return JobPostingListSerializerV2
             return JobPostingListSerializer
         return JobPostingDetailSerializer
 

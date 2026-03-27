@@ -1,6 +1,9 @@
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
-from .models import Application, Stage
+from django.core.cache import cache
+import uuid
+
+from .models import Application, Stage, ApplicationStageLog
 from notification.models import Notification
 
 
@@ -27,3 +30,11 @@ def notify_offer_stage(sender, instance, created, **kwargs):
             user=instance.job.created_by,
             message=f"Candidate {instance.candidate.full_name} has reached the Offer stage!",
         )
+
+
+@receiver(post_save, sender=ApplicationStageLog)
+def invalidate_reports_cache(sender, instance, created, **kwargs):
+
+    if not created:
+        return
+    cache.set("reports_cache_version", uuid.uuid4().hex, None)
