@@ -22,6 +22,10 @@ class IsRecruiterOrAdmin(permissions.BasePermission):
 class IsAssignedInterviewer(permissions.BasePermission):
     
     def has_object_permission(self, request, view, obj):
-        return request.user.is_authenticated and request.user.role == Role.INTERVIEWER and obj.interviewer == request.user
+        if not request.user.is_authenticated or request.user.role != Role.INTERVIEWER:
+            return False
+        if hasattr(obj, 'interviewers'):
+            return obj.interviewers.filter(id=request.user.id).exists()
+        return getattr(obj, 'interviewer_id', None) == request.user.id
 
 
