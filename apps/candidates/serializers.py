@@ -2,13 +2,15 @@ from rest_framework import serializers
 
 from jobs.serializers import JobPostingSerializer
 from jobs.models import JobPosting
-from .models import Application, Stage, ApplicationStageLog, Candidate
+from .models import Application, Stage, ApplicationStageLog, Candidate, Notification, Document
+from .validators import FileValidator
 
 
 class CandidateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Candidate
         fields = ['id', 'full_name', 'email', 'phone', 'linkedin_url', 'source']
+
 
 class ApplicationSerializer(serializers.ModelSerializer):
     candidate = CandidateSerializer()
@@ -75,3 +77,42 @@ class ApplicationStageUpdateSerializer(serializers.ModelSerializer):
             note=note
         )
         return instance
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'message', 'created_at', 'is_read']
+
+
+class DocumentSerializer(serializers.ModelSerializer):
+    file = serializers.FileField(
+        validators=[
+            FileValidator(
+                allowed_mime_types=[
+                    "application/pdf",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "image/png",
+                    "image/jpeg",
+                ],
+                max_size_mb=8,
+            )
+        ]
+    )
+
+    class Meta:
+        model = Document
+        fields = ['id', 'application', 'document_type', 'file', 'uploaded_by', 'uploaded_at']
+        read_only_fields = ['id', 'application', 'uploaded_by', 'uploaded_at']
+
+    def validate(self, attrs):
+        application = self.context.get('application')
+        if not application:
+            raise serializers.ValidationError("Application context is required.")
+
+        current_count = application.documents.count()
+        if current_count >= 3:
+            raise serializers.ValidationError(
+                {"non_field_errors": ["Maximum 3 documents are allowed per application."]}
+            )
+        return attrs
