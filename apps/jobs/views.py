@@ -4,7 +4,8 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 
 from users.permissions import IsRecruiterOrAdmin
-from .models import JobPosting, Department
+from users.models import Role
+from .models import JobPosting, Department, Status
 from .serializers import DepartmentSerializer, JobPostingListSerializer, JobPostingDetailSerializer, JobPostingSerializer
 from .filters import JobPostingFilter
 from rest_framework.decorators import action
@@ -32,18 +33,36 @@ class JobPostingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):
         job = self.get_object()
-        if request.user.role != 'HR_Admin':
+        if request.user.role != Role.ADMIN:
             return Response({"error": "Only HR Admin can publish."}, status=status.HTTP_403_FORBIDDEN)
-        
-        job.status = JobPosting.Status.OPEN
+        if job.status != Status.DRAFT:
+            return Response(
+                {"error": "Only Draft jobs can be published."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        job.status = Status.OPEN
         job.save()
         return Response({"status": "Job published"})
 
 
     @action(detail=True, methods=['post'])
     def close(self, request, pk=None):
-        job = self.get_object() 
-        job.status = JobPosting.Status.CLOSED
+        job = self.get_object()
+        is_hr_admin = request.user.role == Role.ADMIN
+        is_owner_recruiter = request.user.role == Role.RECRUITER and job.created_by_id == request.user.id
+        if not (is_hr_admin or is_owner_recruiter):
+            return Response(
+                {"error": "Only HR Admin or owning Recruiter can close this job."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        if job.status != Status.OPEN:
+            return Response(
+                {"error": "Only Open jobs can be closed."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        job.status = Status.CLOSED
         job.save()
         return Response({"status": "Job closed"})
 
@@ -51,8 +70,11 @@ class JobPostingViewSet(viewsets.ModelViewSet):
     def bulk_status_update(self, request):
         ids = request.data.get('ids', [])
         new_status = request.data.get('status')
-        
-        if new_status not in JobPosting.Status.values:
+
+        if not isinstance(ids, list) or not ids:
+            return Response({"error": "ids must be a non-empty list."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_status not in Status.values:
             return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
 
         jobs = JobPosting.objects.filter(id__in=ids)
@@ -61,7 +83,7 @@ class JobPostingViewSet(viewsets.ModelViewSet):
             return Response({"error": "Some IDs were not found"}, status=status.HTTP_404_NOT_FOUND)
 
         for job in jobs:
-            if not self.request.user.role == 'HR_Admin' and job.created_by != self.request.user:
+            if self.request.user.role != Role.ADMIN and job.created_by != self.request.user:
                 return Response({"error": f"No permission for job ID {job.id}"}, status=status.HTTP_403_FORBIDDEN)
 
         jobs.update(status=new_status)

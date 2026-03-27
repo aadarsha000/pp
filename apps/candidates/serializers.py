@@ -1,8 +1,7 @@
 from rest_framework import serializers
 
-from jobs.serializers import JobPostingSerializer
 from jobs.models import JobPosting
-from .models import Application, Stage, ApplicationStageLog, Candidate, Notification, Document
+from .models import Application, Stage, ApplicationStageLog, Candidate, Document
 from .validators import FileValidator
 
 
@@ -78,11 +77,6 @@ class ApplicationStageUpdateSerializer(serializers.ModelSerializer):
         )
         return instance
 
-
-class NotificationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Notification
-        fields = ['id', 'message', 'created_at', 'is_read']
 
 
 class DocumentSerializer(serializers.ModelSerializer):

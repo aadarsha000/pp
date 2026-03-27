@@ -2,9 +2,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 class Role(models.TextChoices):
-    ADMIN = 'HR_Admin', 'HR_Admin'
-    RECRUITER = 'Recruiter', 'Recruiter'
-    INTERVIEWER = 'Interviewer', 'Interviewer'
+    ADMIN = 'admin', 'HR Admin'
+    RECRUITER = 'recruiter', 'Recruiter'
+    INTERVIEWER = 'interviewer', 'Interviewer'
 
 
 class CustomUser(AbstractUser):
