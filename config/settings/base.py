@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 import sys
 from decouple import config
+from celery.schedules import crontab
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -59,6 +60,7 @@ DJANGO_APP = [
     'jobs',
     'candidates',
     'notification',
+    'interviews',
     
 ]
 
@@ -189,6 +191,24 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='admin@example.com')
+
+CELERY_BEAT_SCHEDULE = {
+    'send-daily-reminders': {
+        'task': 'interviews.tasks.send_interviewer_reminders',
+        'schedule': crontab(hour=7, minute=0),
+    },
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+    }
+}
+
+
 
 from datetime import timedelta
 
