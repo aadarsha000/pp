@@ -1,9 +1,9 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from users.permissions import IsHRAdmin
-from .serializers import LogoutSerializer, UserProfileSerializer, UserRegistrationSerializer, UserRoleUpdateSerializer
+from .serializers import LogoutSerializer, UserProfileSerializer, UserRegistrationSerializer, UserRoleUpdateSerializer, UserSerializer
 from .models import CustomUser
 
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -42,3 +42,10 @@ class LogoutView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsHRAdmin]
+    http_method_names = ['get', 'post', 'put', 'delete']
