@@ -6,7 +6,6 @@ from users.permissions import IsHRAdmin
 from .serializers import LogoutSerializer, UserProfileSerializer, UserRegistrationSerializer, UserRoleUpdateSerializer, UserSerializer
 from .models import CustomUser
 
-from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class RegisterView(generics.CreateAPIView):
