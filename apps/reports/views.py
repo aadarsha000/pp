@@ -156,7 +156,8 @@ class ReportingViewSet(viewsets.ViewSet):
         )
 
         cache.set(cache_key, stats, timeout=self.CACHE_TTL)
-        return response.Response(stats)
+        return api_response("Success", status.HTTP_200_OK, data=stats)
+        return api_response("Success", status.HTTP_200_OK, data=stats)
 
     @extend_schema(
         summary="Department Breakdown",
@@ -196,4 +197,4 @@ class ReportingViewSet(viewsets.ViewSet):
         )
 
         cache.set(cache_key, stats, timeout=self.CACHE_TTL)
-        return response.Response(stats)
+        return api_response("Success", status.HTTP_200_OK, data=stats)

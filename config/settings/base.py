@@ -199,12 +199,6 @@ CELERY_TIMEZONE = TIME_ZONE
 
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="admin@example.com")
 
-CELERY_BEAT_SCHEDULE = {
-    "send-daily-reminders": {
-        "task": "notification.tasks.dispatch_interview_reminders",
-        "schedule": crontab(hour=7, minute=0),
-    },
-}
 
 CACHES = {
     "default": {

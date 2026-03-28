@@ -1,4 +1,6 @@
 from celery import shared_task
+from django.conf import settings
+from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
 
@@ -57,14 +59,26 @@ def task_notify_interview_reminder(self, interview_id: int):
         .prefetch_related("interviewers")
         .get(id=interview_id)
     )
+    candidate_name = interview.application.candidate.full_name
     payload = {
         "event": "interview_reminder",
         "interview_id": interview.id,
         "scheduled_at": interview.scheduled_at.isoformat(),
-        "candidate_name": interview.application.candidate.full_name,
+        "candidate_name": candidate_name,
     }
-    for recipient_id in interview.interviewers.values_list("id", flat=True):
-        push_notification(recipient_id, "interview_reminder", payload)
+    for user in interview.interviewers.all():
+        body = (
+            f"Reminder: you have an interview with {candidate_name} "
+            f"at {interview.scheduled_at.isoformat()}."
+        )
+        send_mail(
+            subject="Interview reminder",
+            message=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+        push_notification(user.id, "interview_reminder", payload)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)

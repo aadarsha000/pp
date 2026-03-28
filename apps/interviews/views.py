@@ -2,8 +2,8 @@ from rest_framework import viewsets, status
 from config.utils import api_response
 from rest_framework.decorators import action
 from django.db.models import Avg
-from .models import Interview, InterviewStatus, FeedbackScore
-from .serializers import InterviewSerializer, InterviewFeedbackSerializer
+from .models import Interview, InterviewStatus, FeedbackScore, FeedbackRubric   
+from .serializers import InterviewSerializer, InterviewFeedbackSerializer, FeedbackRubricSerializer
 from users.permissions import IsAssignedInterviewer, IsRecruiterOrAdmin
 from django.utils import timezone
 from users.models import Role
@@ -101,6 +101,7 @@ class InterviewViewSet(viewsets.ModelViewSet):
         detail=True,
         methods=["post"],
         url_path="feedback",
+        serializer_class=InterviewFeedbackSerializer,
         permission_classes=[IsAssignedInterviewer],
     )
     def feedback(self, request, pk=None):
@@ -143,3 +144,11 @@ class InterviewViewSet(viewsets.ModelViewSet):
                 "rubric_averages": list(rubric_averages),
             },
         )
+
+
+
+class FeedbackRubricViewSet(viewsets.ModelViewSet):
+    queryset = FeedbackRubric.objects.all()
+    serializer_class = FeedbackRubricSerializer
+    permission_classes = [IsRecruiterOrAdmin]
+    http_method_names = ['get', 'post', 'patch', 'delete']

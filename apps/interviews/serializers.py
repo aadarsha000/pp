@@ -169,3 +169,9 @@ class InterviewFeedbackSerializer(serializers.ModelSerializer):
             FeedbackScore.objects.create(feedback=feedback, **score_item)
 
         return feedback
+
+
+class FeedbackRubricSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FeedbackRubric
+        fields = ["id", "label", "max_score"]
