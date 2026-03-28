@@ -26,6 +26,11 @@ class IsRecruiterOrAdmin(permissions.BasePermission):
         job = getattr(obj, "job", None)
         if job is not None and getattr(job, "created_by_id", None) == request.user.id:
             return True
+        application = getattr(obj, "application", None)
+        if application is not None:
+            job = getattr(application, "job", None)
+            if job is not None and getattr(job, "created_by_id", None) == request.user.id:
+                return True
         return False
 
 

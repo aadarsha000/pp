@@ -48,6 +48,11 @@ class InterviewSerializer(serializers.ModelSerializer):
             interviewers = self.instance.interviewers.all()
         interviewers = list(interviewers or [])
 
+        if self.instance is None and not interviewers:
+            raise serializers.ValidationError(
+                {"interviewers": "At least one interviewer is required."}
+            )
+
         for interviewer in interviewers:
             if interviewer.role != Role.INTERVIEWER:
                 raise serializers.ValidationError(
@@ -91,9 +96,11 @@ class InterviewSerializer(serializers.ModelSerializer):
 
 
 class FeedbackScoreSerializer(serializers.ModelSerializer):
+    rubric_label = serializers.CharField(source="rubric.label", read_only=True)
+
     class Meta:
         model = FeedbackScore
-        fields = ["rubric", "score"]
+        fields = ["rubric", "rubric_label", "score"]
 
     def validate(self, attrs):
         rubric = attrs["rubric"]

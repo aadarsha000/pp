@@ -75,7 +75,20 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             )
         return api_response("Stage updated", status.HTTP_200_OK, data=serializer.data)
 
-    @extend_schema(summary="Upload Application Document", description="Upload a document to an application with MIME/size and document-count validation.")
+    @extend_schema(
+        summary="Upload Application Document",
+        description="Upload a document to an application with MIME/size and document-count validation.",
+        request={
+            "multipart/form-data": {
+                "type": "object",
+                "properties": {
+                    "document_type": {"type": "string"},
+                    "file": {"type": "string", "format": "binary"},
+                },
+                "required": ["document_type", "file"],
+            }
+        },
+    )
     @action(detail=True, methods=['post'], url_path='documents')
     def upload_document(self, request, pk=None):
         application = self.get_object()
