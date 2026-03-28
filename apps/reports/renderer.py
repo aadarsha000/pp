@@ -9,7 +9,10 @@ class CSVRenderer(BaseRenderer):
     def render(self, data, media_type=None, renderer_context=None):
         if data is None:
             return ""
-        
+
+        if isinstance(data, dict) and "data" in data and "message" in data:
+            data = data["data"]
+
         # Handle both list of dicts and single dict
         if not isinstance(data, list):
             data = [data]

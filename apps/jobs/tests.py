@@ -61,4 +61,38 @@ class JobEndpointsTests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["status_code"], status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["code"], "NOT_FOUND")
+
+    def test_bulk_status_update_duplicate_ids_succeeds_once(self):
+        response = self.client.post(
+            "/jobs/bulk-status-update/",
+            {"ids": [self.job.id, self.job.id], "status": JobStatus.CLOSED},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["data"]["updated_count"], 1)
+        self.job.refresh_from_db()
+        self.assertEqual(self.job.status, JobStatus.CLOSED)
+
+    def test_bulk_status_update_permission_denied_for_other_users_job(self):
+        other_job = JobPosting.objects.create(
+            title="Other",
+            department=self.department,
+            location="Kathmandu",
+            employment_type=EmploymentType.FULL_TIME,
+            description="d",
+            requirements="r",
+            salary_min=1,
+            salary_max=2,
+            status=JobStatus.OPEN,
+            created_by=self.admin,
+            deadline=timezone.now() + timedelta(days=7),
+        )
+        response = self.client.post(
+            "/jobs/bulk-status-update/",
+            {"ids": [other_job.id], "status": JobStatus.CLOSED},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data["code"], "PERMISSION_DENIED")

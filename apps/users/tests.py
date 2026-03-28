@@ -41,12 +41,18 @@ class ErrorResponseShapeTests(APITestCase):
         self.client.force_authenticate(user=self.recruiter)
         response = self.client.get("/jobs/999999/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(set(response.data.keys()), {"error", "code", "details"})
+        self.assertEqual(
+            set(response.data.keys()), {"message", "status_code", "code", "details"}
+        )
+        self.assertEqual(response.data["status_code"], status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["code"], "NOT_FOUND")
 
     def test_permission_denied_uses_custom_error_shape(self):
         self.client.force_authenticate(user=self.recruiter)
         response = self.client.post(f"/jobs/{self.job.id}/publish/")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(set(response.data.keys()), {"error", "code", "details"})
+        self.assertEqual(
+            set(response.data.keys()), {"message", "status_code", "code", "details"}
+        )
+        self.assertEqual(response.data["status_code"], status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data["code"], "PERMISSION_DENIED")

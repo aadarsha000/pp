@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status
-from rest_framework.response import Response
+from config.utils import api_response
 from rest_framework.decorators import action
 from django.db.models import Avg
 from .models import Interview, InterviewStatus, FeedbackScore
@@ -60,7 +60,7 @@ class InterviewViewSet(viewsets.ModelViewSet):
             }
             for interview in interviews
         ]
-        return Response(data)
+        return api_response("Success", status.HTTP_200_OK, data=data)
 
     @extend_schema(
         summary="Cancel Interview",
@@ -78,7 +78,7 @@ class InterviewViewSet(viewsets.ModelViewSet):
 
         interview.status = InterviewStatus.CANCELLED
         interview.save()
-        return Response({"status": "Interview cancelled"})
+        return api_response("Interview cancelled", status.HTTP_200_OK)
 
     @extend_schema(
         summary="Complete Interview",
@@ -91,7 +91,7 @@ class InterviewViewSet(viewsets.ModelViewSet):
             raise ValidationError("Cannot complete a cancelled interview.")
         interview.status = InterviewStatus.COMPLETED
         interview.save()
-        return Response({"status": "Interview marked as completed"})
+        return api_response("Interview marked as completed", status.HTTP_200_OK)
 
     @extend_schema(
         summary="Submit Feedback",
@@ -110,8 +110,10 @@ class InterviewViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         feedback = serializer.save()
-        return Response(
-            InterviewFeedbackSerializer(feedback).data, status=status.HTTP_201_CREATED
+        return api_response(
+            "Feedback submitted",
+            status.HTTP_201_CREATED,
+            data=InterviewFeedbackSerializer(feedback).data,
         )
 
     @extend_schema(
@@ -131,11 +133,13 @@ class InterviewViewSet(viewsets.ModelViewSet):
             .order_by("rubric_id")
         )
 
-        return Response(
-            {
+        return api_response(
+            "Success",
+            status.HTTP_200_OK,
+            data={
                 "individual_feedback": InterviewFeedbackSerializer(
                     feedbacks, many=True
                 ).data,
                 "rubric_averages": list(rubric_averages),
-            }
+            },
         )

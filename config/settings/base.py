@@ -226,7 +226,7 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),  # 15-minute expiry
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),  # 7-day expiry
     "ROTATE_REFRESH_TOKENS": True,  # Enable rotation
-    "BLACKLIST_AFTER_ROTATION": True,  # Blacklist old refresh tokens when a new one is issued
+    "BLACKLIST_AFTER_ROTATION": False,  # Blacklist old refresh tokens when a new one is issued
     "AUTH_HEADER_TYPES": ("Bearer",),  # Use 'Bearer' in Authorization header
 }
 

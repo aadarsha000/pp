@@ -14,7 +14,8 @@ from django.db.models import (
 )
 from django.core.cache import cache
 from django.utils import timezone
-from rest_framework import viewsets, response, renderers
+from rest_framework import renderers, status, viewsets
+from config.utils import api_response
 from rest_framework.decorators import action
 from reports.renderer import CSVRenderer
 from drf_spectacular.utils import extend_schema
@@ -55,7 +56,7 @@ class ReportingViewSet(viewsets.ViewSet):
         cache_key = self._cache_key("pipeline_funnel", request, extra=f"job={job_id}")
         cached = cache.get(cache_key)
         if cached is not None:
-            return response.Response(cached)
+            return api_response("Success", status.HTTP_200_OK, data=cached)
 
         # Single query annotated with counts for every stage
         stats = Application.objects.filter(job_id=job_id).aggregate(
@@ -68,7 +69,7 @@ class ReportingViewSet(viewsets.ViewSet):
             rejected=Count("id", filter=Q(stage=Stage.REJECTED)),
         )
         cache.set(cache_key, stats, timeout=self.REPORTS_CACHE_TTL_SECONDS)
-        return response.Response(stats)
+        return api_response("Success", status.HTTP_200_OK, data=stats)
 
     @extend_schema(
         summary="Time To Hire",
@@ -79,7 +80,7 @@ class ReportingViewSet(viewsets.ViewSet):
         cache_key = self._cache_key("time_to_hire", request)
         cached = cache.get(cache_key)
         if cached is not None:
-            return response.Response(cached)
+            return api_response("Success", status.HTTP_200_OK, data=cached)
 
         # Average days from Applied (created_at) to Hired (updated_at)
         qs = (
@@ -107,7 +108,7 @@ class ReportingViewSet(viewsets.ViewSet):
             for row in qs
         ]
         cache.set(cache_key, stats, timeout=self.REPORTS_CACHE_TTL_SECONDS)
-        return response.Response(stats)
+        return api_response("Success", status.HTTP_200_OK, data=stats)
 
     @extend_schema(
         summary="Interviewer Workload",
@@ -121,7 +122,7 @@ class ReportingViewSet(viewsets.ViewSet):
         )
         cached = cache.get(cache_key)
         if cached is not None:
-            return response.Response(cached)
+            return api_response("Success", status.HTTP_200_OK, data=cached)
 
         # related_name from Interview.interviewers M2M defaults to `interview_set` on User
         stats = (
@@ -155,7 +156,7 @@ class ReportingViewSet(viewsets.ViewSet):
         )
 
         cache.set(cache_key, list(stats), timeout=self.REPORTS_CACHE_TTL_SECONDS)
-        return response.Response(stats)
+        return api_response("Success", status.HTTP_200_OK, data=list(stats))
 
     @extend_schema(
         summary="Department Breakdown",
@@ -166,7 +167,7 @@ class ReportingViewSet(viewsets.ViewSet):
         cache_key = self._cache_key("department_breakdown", request)
         cached = cache.get(cache_key)
         if cached is not None:
-            return response.Response(cached)
+            return api_response("Success", status.HTTP_200_OK, data=cached)
 
         departments = (
             Department.objects.annotate(
@@ -192,4 +193,4 @@ class ReportingViewSet(viewsets.ViewSet):
         )
 
         cache.set(cache_key, list(departments), timeout=self.REPORTS_CACHE_TTL_SECONDS)
-        return response.Response(departments)
+        return api_response("Success", status.HTTP_200_OK, data=list(departments))

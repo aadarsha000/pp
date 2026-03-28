@@ -2,7 +2,7 @@ from rest_framework import viewsets, status, mixins
 from apps.notification.models import Notification
 from .serializers import NotificationSerializer
 from users.permissions import IsRecruiterOrAdmin
-from rest_framework.response import Response
+from config.utils import api_response
 from rest_framework.decorators import action
 from rest_framework.pagination import CursorPagination
 from rest_framework.filters import OrderingFilter
@@ -39,7 +39,11 @@ class NotificationViewSet(
         notification = self.get_object()
         notification.is_read = True
         notification.save()
-        return Response({"id": notification.id, "is_read": notification.is_read})
+        return api_response(
+            "Notification marked as read",
+            status.HTTP_200_OK,
+            data={"id": notification.id, "is_read": notification.is_read},
+        )
 
     @action(
         detail=False, methods=["post"], url_path="mark-all-read", serializer_class=None
@@ -50,7 +54,8 @@ class NotificationViewSet(
             is_read=False,
         ).update(is_read=True)
 
-        return Response(
-            {"status": "success", "marked_count": updated_count},
-            status=status.HTTP_200_OK,
+        return api_response(
+            "Notifications marked as read",
+            status.HTTP_200_OK,
+            data={"marked_count": updated_count},
         )

@@ -61,13 +61,15 @@ def _code_for_exception(exc, status_code):
 def custom_exception_handler(exc, context):
     response = drf_exception_handler(exc, context)
     if response is None:
+        status_code = drf_status.HTTP_500_INTERNAL_SERVER_ERROR
         return Response(
             {
-                "error": "Internal server error",
+                "message": "Internal server error",
+                "status_code": status_code,
                 "code": "INTERNAL_SERVER_ERROR",
                 "details": {"non_field_errors": [str(exc)]},
             },
-            status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status=status_code,
         )
 
     status_code = response.status_code
@@ -103,7 +105,8 @@ def custom_exception_handler(exc, context):
     details = _normalize_details(details_source)
     return Response(
         {
-            "error": message,
+            "message": message,
+            "status_code": status_code,
             "code": code,
             "details": details,
         },

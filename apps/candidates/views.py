@@ -13,7 +13,7 @@ from users.permissions import IsRecruiterOrAdmin
 from users.models import Role
 from rest_framework import viewsets, status
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.response import Response
+from config.utils import api_response
 from rest_framework.decorators import action
 from candidates.throttles import ApplicationsPostIPThrottle
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -71,7 +71,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
                 from_stage=from_stage,
                 to_stage=new_stage
             )
-        return Response(serializer.data)
+        return api_response("Stage updated", status.HTTP_200_OK, data=serializer.data)
 
     @extend_schema(summary="Upload Application Document", description="Upload a document to an application with MIME/size and document-count validation.")
     @action(detail=True, methods=['post'], url_path='documents')
@@ -83,7 +83,11 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(application=application, uploaded_by=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return api_response(
+            "Document uploaded",
+            status.HTTP_201_CREATED,
+            data=serializer.data,
+        )
 
     @extend_schema(summary="Delete Application Document", description="Delete an application document. Allowed for HR Admin or the uploader.")
     @action(detail=True, methods=['delete'], url_path='documents/(?P<doc_id>[^/.]+)')
@@ -99,7 +103,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Only HR Admin or the uploader can delete this document.")
 
         document.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return api_response("Document deleted", status.HTTP_200_OK)
 
 
 

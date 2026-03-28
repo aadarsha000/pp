@@ -44,7 +44,7 @@ class ReportsTests(APITestCase):
     def test_pipeline_funnel_json(self):
         response = self.client.get(f"/reports/pipeline-funnel/?job={self.job.id}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("applied", response.data)
+        self.assertIn("applied", response.data["data"])
 
     def test_pipeline_funnel_csv(self):
         response = self.client.get(f"/reports/pipeline-funnel/?job={self.job.id}&format=csv")
