@@ -5,11 +5,13 @@ from datetime import timedelta
 from notification.services import push_notification
 
 
-@shared_task
-def task_notify_new_application(application_id: int):
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def task_notify_new_application(self, application_id: int):
     from candidates.models import Application
 
-    application = Application.objects.select_related("job", "candidate").get(id=application_id)
+    application = Application.objects.select_related("job", "candidate").get(
+        id=application_id
+    )
     recipient = application.job.created_by
     if not recipient:
         return
@@ -23,11 +25,15 @@ def task_notify_new_application(application_id: int):
     push_notification(recipient.id, "new_application", payload)
 
 
-@shared_task
-def task_notify_stage_changed(application_id: int, from_stage: str, to_stage: str):
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def task_notify_stage_changed(
+    self, application_id: int, from_stage: str, to_stage: str
+):
     from candidates.models import Application
 
-    application = Application.objects.select_related("job", "candidate").get(id=application_id)
+    application = Application.objects.select_related("job", "candidate").get(
+        id=application_id
+    )
     recipient = application.job.created_by
     if not recipient:
         return
@@ -42,12 +48,14 @@ def task_notify_stage_changed(application_id: int, from_stage: str, to_stage: st
     push_notification(recipient.id, "stage_changed", payload)
 
 
-@shared_task
-def task_notify_interview_reminder(interview_id: int):
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def task_notify_interview_reminder(self, interview_id: int):
     from interviews.models import Interview
 
-    interview = Interview.objects.select_related("application__candidate").prefetch_related("interviewers").get(
-        id=interview_id
+    interview = (
+        Interview.objects.select_related("application__candidate")
+        .prefetch_related("interviewers")
+        .get(id=interview_id)
     )
     payload = {
         "event": "interview_reminder",
@@ -59,8 +67,8 @@ def task_notify_interview_reminder(interview_id: int):
         push_notification(recipient_id, "interview_reminder", payload)
 
 
-@shared_task
-def dispatch_interview_reminders():
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def dispatch_interview_reminders(self):
     from interviews.models import Interview, InterviewStatus
 
     now = timezone.now()

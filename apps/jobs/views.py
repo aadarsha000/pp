@@ -20,29 +20,30 @@ from drf_spectacular.utils import extend_schema
 
 
 class JobPostingViewSet(viewsets.ModelViewSet):
-    queryset = JobPosting.objects.select_related('department').annotate(
-            applicant_count=Count('job_applications') 
-        )
+    queryset = JobPosting.objects.select_related("department").annotate(
+        applicant_count=Count("job_applications")
+    )
     serializer_class = JobPostingSerializer
     permission_classes = [IsRecruiterOrAdmin]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = JobPostingFilter
-    search_fields = ['title', 'description']
-    ordering_fields = ['created_at', 'salary_min', 'salary_max', 'deadline', 'status']
-    ordering = '-created_at'
-    http_method_names = ['get', 'post', 'patch', 'delete']
+    search_fields = ["title", "description"]
+    ordering_fields = ["created_at", "salary_min", "salary_max", "deadline", "status"]
+    ordering = "-created_at"
+    http_method_names = ["get", "post", "patch", "delete"]
 
     def get_serializer_class(self):
-        if self.action == 'list':
+        if self.action == "list":
             return JobPostingListSerializer
         return JobPostingDetailSerializer
-
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
-    @extend_schema(summary="Publish Job", description="Moves a Draft job to Open. HR Admin only.")
-    @action(detail=True, methods=['post'])
+    @extend_schema(
+        summary="Publish Job", description="Moves a Draft job to Open. HR Admin only."
+    )
+    @action(detail=True, methods=["post"])
     def publish(self, request, pk=None):
         job = self.get_object()
         if request.user.role != Role.ADMIN:
@@ -54,15 +55,21 @@ class JobPostingViewSet(viewsets.ModelViewSet):
         job.save()
         return Response({"status": "Job published"})
 
-
-    @extend_schema(summary="Close Job", description="Moves an Open job to Closed. HR Admin or owning Recruiter.")
-    @action(detail=True, methods=['post'])
+    @extend_schema(
+        summary="Close Job",
+        description="Moves an Open job to Closed. HR Admin or owning Recruiter.",
+    )
+    @action(detail=True, methods=["post"])
     def close(self, request, pk=None):
         job = self.get_object()
         is_hr_admin = request.user.role == Role.ADMIN
-        is_owner_recruiter = request.user.role == Role.RECRUITER and job.created_by_id == request.user.id
+        is_owner_recruiter = (
+            request.user.role == Role.RECRUITER and job.created_by_id == request.user.id
+        )
         if not (is_hr_admin or is_owner_recruiter):
-            raise PermissionDenied("Only HR Admin or owning Recruiter can close this job.")
+            raise PermissionDenied(
+                "Only HR Admin or owning Recruiter can close this job."
+            )
         if job.status != Status.OPEN:
             raise ValidationError("Only Open jobs can be closed.")
 
@@ -70,11 +77,14 @@ class JobPostingViewSet(viewsets.ModelViewSet):
         job.save()
         return Response({"status": "Job closed"})
 
-    @extend_schema(summary="Bulk Status Update", description="Update status for multiple jobs by ID. Validates IDs and caller permissions.")
-    @action(detail=False, methods=['post'], url_path='bulk-status-update')
+    @extend_schema(
+        summary="Bulk Status Update",
+        description="Update status for multiple jobs by ID. Validates IDs and caller permissions.",
+    )
+    @action(detail=False, methods=["post"], url_path="bulk-status-update")
     def bulk_status_update(self, request):
-        ids = request.data.get('ids', [])
-        new_status = request.data.get('status')
+        ids = request.data.get("ids", [])
+        new_status = request.data.get("status")
 
         if not isinstance(ids, list) or not ids:
             raise ValidationError({"ids": ["ids must be a non-empty list."]})
@@ -83,20 +93,24 @@ class JobPostingViewSet(viewsets.ModelViewSet):
             raise ValidationError({"status": ["Invalid status"]})
 
         jobs = JobPosting.objects.filter(id__in=ids)
-        
+        found_count = jobs.count()
         if jobs.count() != len(ids):
-            raise NotFound("Some IDs were not found.")
+            raise NotFound("One or more job IDs were not found.")
 
-        for job in jobs:
-            if self.request.user.role != Role.ADMIN and job.created_by != self.request.user:
-                raise PermissionDenied(f"No permission for job ID {job.id}")
+        if request.user.role != Role.ADMIN:
+            # Recruiters may only bulk-update jobs they created
+            unauthorized = jobs.exclude(created_by=request.user)
+            if unauthorized.exists():
+                raise PermissionDenied(
+                    "You do not have permission to update one or more of the specified jobs."
+                )
 
         jobs.update(status=new_status)
-        return Response({"message": f"Updated {jobs.count()} jobs to {new_status}"})
+        return Response({"message": f"Updated {found_count} jobs to '{new_status}'."})
 
 
 class DepartmentViewSet(viewsets.ModelViewSet):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
     permission_classes = [IsRecruiterOrAdmin]
-    http_method_names = ['get', 'post', 'patch', 'delete']
+    http_method_names = ["get", "post", "patch", "delete"]
