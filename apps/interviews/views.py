@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from django.db.models import Avg
 from .models import Interview, InterviewStatus, FeedbackScore
 from .serializers import InterviewSerializer, InterviewFeedbackSerializer
-from users.permissions import IsAssignedInterviewer
+from users.permissions import IsAssignedInterviewer, IsRecruiterOrAdmin
 from django.utils import timezone
 from users.models import Role
 from drf_spectacular.utils import extend_schema
@@ -12,19 +12,34 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 
 class InterviewViewSet(viewsets.ModelViewSet):
-    queryset = Interview.objects.select_related('application__candidate').prefetch_related('interviewers')
+    queryset = Interview.objects.select_related(
+        "application__candidate"
+    ).prefetch_related("interviewers")
     serializer_class = InterviewSerializer
+    permission_classes = [IsRecruiterOrAdmin]
 
-    @extend_schema(summary="My Schedule", description="Returns upcoming scheduled interviews for the authenticated interviewer.")
-    @action(detail=False, methods=['get'], url_path='my-schedule')
+    @extend_schema(
+        summary="My Schedule",
+        description="Returns upcoming scheduled interviews for the authenticated interviewer.",
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="my-schedule",
+        permission_classes=[IsAssignedInterviewer],
+    )
     def my_schedule(self, request):
         if request.user.role != Role.INTERVIEWER:
             raise PermissionDenied("Only interviewers can access my-schedule.")
-        interviews = Interview.objects.filter(
-            interviewers=request.user,
-            scheduled_at__gte=timezone.now(),
-            status=InterviewStatus.SCHEDULED,
-        ).select_related('application__candidate').order_by('scheduled_at')
+        interviews = (
+            Interview.objects.filter(
+                interviewers=request.user,
+                scheduled_at__gte=timezone.now(),
+                status=InterviewStatus.SCHEDULED,
+            )
+            .select_related("application__candidate")
+            .order_by("scheduled_at")
+        )
         data = [
             {
                 "id": interview.id,
@@ -47,20 +62,29 @@ class InterviewViewSet(viewsets.ModelViewSet):
         ]
         return Response(data)
 
-    @extend_schema(summary="Cancel Interview", description="Cancels an interview. Completed interviews cannot be cancelled.")
-    @action(detail=True, methods=['post'])
+    @extend_schema(
+        summary="Cancel Interview",
+        description="Cancels an interview. Completed interviews cannot be cancelled.",
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsRecruiterOrAdmin],
+    )
     def cancel(self, request, pk=None):
         interview = self.get_object()
         if interview.status == InterviewStatus.COMPLETED:
             raise ValidationError("Cannot cancel a completed interview.")
-        
+
         interview.status = InterviewStatus.CANCELLED
         interview.save()
         return Response({"status": "Interview cancelled"})
 
-
-    @extend_schema(summary="Complete Interview", description="Marks an interview as completed. Only assigned interviewers can do this.")
-    @action(detail=True, methods=['post'], permission_classes=[IsAssignedInterviewer])
+    @extend_schema(
+        summary="Complete Interview",
+        description="Marks an interview as completed. Only assigned interviewers can do this.",
+    )
+    @action(detail=True, methods=["post"], permission_classes=[IsAssignedInterviewer])
     def complete(self, request, pk=None):
         interview = self.get_object()
         if interview.status == InterviewStatus.CANCELLED:
@@ -69,38 +93,49 @@ class InterviewViewSet(viewsets.ModelViewSet):
         interview.save()
         return Response({"status": "Interview marked as completed"})
 
-
-    @extend_schema(summary="Submit Feedback", description="Submit interview feedback with scores for all rubric items.")
-    @action(detail=True, methods=['post'], url_path='feedback', permission_classes=[IsAssignedInterviewer])
+    @extend_schema(
+        summary="Submit Feedback",
+        description="Submit interview feedback with scores for all rubric items.",
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="feedback",
+        permission_classes=[IsAssignedInterviewer],
+    )
     def feedback(self, request, pk=None):
         interview = self.get_object()
         serializer = InterviewFeedbackSerializer(
-            data=request.data, 
-            context={'request': request, 'interview': interview}
+            data=request.data, context={"request": request, "interview": interview}
         )
         serializer.is_valid(raise_exception=True)
         feedback = serializer.save()
         return Response(
-            InterviewFeedbackSerializer(feedback).data,
-            status=status.HTTP_201_CREATED
+            InterviewFeedbackSerializer(feedback).data, status=status.HTTP_201_CREATED
         )
 
-
-    @extend_schema(summary="Interview Feedback", description="Returns all feedback for the interview along with per-rubric average scores.")
-    @action(detail=True, methods=['get'], url_path='feedback')
+    @extend_schema(
+        summary="Interview Feedback",
+        description="Returns all feedback for the interview along with per-rubric average scores.",
+    )
+    @action(detail=True, methods=["get"], url_path="feedback")
     def list_feedback(self, request, pk=None):
         interview = self.get_object()
-        
-        feedbacks = interview.feedbacks.prefetch_related('scores', 'scores__rubric')
-        
+
+        feedbacks = interview.feedbacks.prefetch_related("scores", "scores__rubric")
+
         rubric_averages = (
             FeedbackScore.objects.filter(feedback__interview=interview)
-            .values('rubric_id', 'rubric__label')
-            .annotate(average_score=Avg('score'))
-            .order_by('rubric_id')
+            .values("rubric_id", "rubric__label")
+            .annotate(average_score=Avg("score"))
+            .order_by("rubric_id")
         )
 
-        return Response({
-            "individual_feedback": InterviewFeedbackSerializer(feedbacks, many=True).data,
-            "rubric_averages": list(rubric_averages),
-        })
+        return Response(
+            {
+                "individual_feedback": InterviewFeedbackSerializer(
+                    feedbacks, many=True
+                ).data,
+                "rubric_averages": list(rubric_averages),
+            }
+        )
