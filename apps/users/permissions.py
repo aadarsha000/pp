@@ -22,6 +22,10 @@ class IsRecruiterOrAdmin(permissions.BasePermission):
             owner = getattr(obj, owner_attr, None)
             if owner == request.user:
                 return True
+
+        job = getattr(obj, "job", None)
+        if job is not None and getattr(job, "created_by_id", None) == request.user.id:
+            return True
         return False
 
 

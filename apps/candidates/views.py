@@ -1,12 +1,14 @@
 from django.shortcuts import render
+from rest_framework.permissions import AllowAny
 
-from candidates.models import Application, Candidate, Document
+from candidates.models import Application, ApplicationStageLog, Candidate, Document, Stage
 from candidates.serializers import (
     ApplicationSerializer,
     ApplicationStageUpdateSerializer,
     CandidateSerializer,
     ApplicationCreateSerializer,
-    DocumentSerializer
+    DocumentSerializer,
+    ApplicationStageLogSerializer
 )
 from candidates.filters import ApplicationFilter, CandidateFilter
 from users.permissions import IsRecruiterOrAdmin
@@ -56,7 +58,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         task_notify_new_application.delay(application.id)
 
     @extend_schema(summary="Update Application Stage", description="Advance application stage sequentially and logs the transition.")
-    @action(detail=True, methods=['patch'], url_path='stage')
+    @action(detail=True, methods=['patch'], url_path='stage', permission_classes=[IsRecruiterOrAdmin])
     def stage(self, request, pk=None):
         application = self.get_object()
         from_stage = application.stage
@@ -65,7 +67,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         serializer.save()
         new_stage = serializer.instance.stage
         # Trigger notification asynchronously
-        if from_stage != new_stage and application.job.created_by_id:
+        if from_stage != new_stage and new_stage == Stage.OFFER and application.job.created_by_id:
             task_notify_stage_changed.delay(
                 application_id=application.id,
                 from_stage=from_stage,
@@ -106,7 +108,14 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return api_response("Document deleted", status.HTTP_200_OK)
 
 
-
+class ApplicationStageLogViewSet(viewsets.ModelViewSet):
+    queryset = ApplicationStageLog.objects.all()
+    # permission_classes = [AllowAny]
+    serializer_class = ApplicationStageLogSerializer
+    permission_classes = [IsRecruiterOrAdmin]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['application']
+    http_method_names = ['get']
 
 
 class CandidateViewSet(viewsets.ModelViewSet):

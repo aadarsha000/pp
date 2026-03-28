@@ -38,9 +38,14 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
         raise serializers.ValidationError("Job not found.")
 
 
+class ApplicationStageLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicationStageLog
+        fields = ['id', 'application', 'from_stage', 'to_stage', 'changed_by', 'changed_at', 'note']
+
 
 class ApplicationStageUpdateSerializer(serializers.ModelSerializer):
-    note = serializers.CharField(required=False, write_only=True)
+    note = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Application
