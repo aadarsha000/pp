@@ -1,5 +1,5 @@
 from rest_framework import generics, status, viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from users.permissions import IsHRAdmin
@@ -8,34 +8,32 @@ from .models import CustomUser
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
+
 class RegisterView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
 
 
-
 class ManageSelfView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
-    http_method_names = ['get', 'patch']
+    http_method_names = ["get", "patch"]
 
     def get_object(self):
         return self.request.user
-
 
 
 class PromoteUserView(generics.UpdateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserRoleUpdateSerializer
     permission_classes = [IsHRAdmin]
-    
-    http_method_names = ['patch'] 
 
+    http_method_names = ["patch"]
 
 
 class LogoutView(generics.GenericAPIView):
     serializer_class = LogoutSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)

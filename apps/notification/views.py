@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, mixins
 from apps.notification.models import Notification
 from .serializers import NotificationSerializer
 from users.permissions import IsRecruiterOrAdmin
@@ -14,15 +14,16 @@ class NotificationCursorPagination(CursorPagination):
     ordering = ("is_read", "-created_at", "-id")
 
 
-class NotificationViewSet(viewsets.ModelViewSet):
-    queryset = Notification.objects.all()
+class NotificationViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
     serializer_class = NotificationSerializer
     permission_classes = [IsRecruiterOrAdmin]
-    http_method_names = ["get", "patch", "post"]
     pagination_class = NotificationCursorPagination
     ordering_fields = ["created_at"]
     ordering = "-created_at"
-
     filter_backends = [OrderingFilter]
 
     def get_queryset(self):
