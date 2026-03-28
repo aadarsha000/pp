@@ -125,7 +125,7 @@ class ReportingViewSet(viewsets.ViewSet):
             return api_response("Success", status.HTTP_200_OK, data=cached)
 
         # related_name from Interview.interviewers M2M defaults to `interview_set` on User
-        stats = (
+        stats = list(
             CustomUser.objects.filter(role=Role.INTERVIEWER)
             .annotate(
                 assigned_interviews=Count(
@@ -155,8 +155,8 @@ class ReportingViewSet(viewsets.ViewSet):
             )
         )
 
-        cache.set(cache_key, list(stats), timeout=self.REPORTS_CACHE_TTL_SECONDS)
-        return api_response("Success", status.HTTP_200_OK, data=list(stats))
+        cache.set(cache_key, stats, timeout=self.CACHE_TTL)
+        return response.Response(stats)
 
     @extend_schema(
         summary="Department Breakdown",
@@ -169,7 +169,7 @@ class ReportingViewSet(viewsets.ViewSet):
         if cached is not None:
             return api_response("Success", status.HTTP_200_OK, data=cached)
 
-        departments = (
+        stats = list(
             Department.objects.annotate(
                 open_jobs=Count("jobs", filter=Q(jobs__status=JobStatus.OPEN)),
                 total_applications=Count("jobs__job_applications"),
@@ -182,8 +182,11 @@ class ReportingViewSet(viewsets.ViewSet):
                 hire_rate=ExpressionWrapper(
                     Case(
                         When(total_applications=0, then=Value(0.0)),
-                        default=(F("hired_applications") * Value(100.0))
-                        / F("total_applications"),
+                        default=(
+                            F("hired_applications")
+                            * Value(100.0)
+                            / F("total_applications")
+                        ),
                         output_field=FloatField(),
                     ),
                     output_field=FloatField(),
@@ -192,5 +195,5 @@ class ReportingViewSet(viewsets.ViewSet):
             .values("name", "open_jobs", "total_applications", "hire_rate")
         )
 
-        cache.set(cache_key, list(departments), timeout=self.REPORTS_CACHE_TTL_SECONDS)
-        return api_response("Success", status.HTTP_200_OK, data=list(departments))
+        cache.set(cache_key, stats, timeout=self.CACHE_TTL)
+        return response.Response(stats)

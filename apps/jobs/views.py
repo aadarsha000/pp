@@ -24,23 +24,24 @@ class JobPostingViewSet(viewsets.ModelViewSet):
     queryset = JobPosting.objects.select_related('department').annotate(
             applicant_count=Count('job_applications') 
         )
+    queryset = JobPosting.objects.select_related("department").annotate(
+        applicant_count=Count("job_applications")
+    )
+    serializer_class = JobPostingSerializer
     permission_classes = [IsRecruiterOrAdmin]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = JobPostingFilter
-    search_fields = ['title', 'description']
-    ordering_fields = ['created_at', 'salary_min', 'salary_max', 'deadline', 'status']
-    ordering = '-created_at'
-    http_method_names = ['get', 'post', 'patch', 'delete']
+    search_fields = ["title", "description"]
+    ordering_fields = ["created_at", "salary_min", "salary_max", "deadline", "status"]
+    ordering = "-created_at"
+    http_method_names = ["get", "post", "patch", "delete"]
 
     def get_serializer_class(self):
         if self.action == "bulk_status_update":
             return BulkJobStatusUpdateSerializer
         if self.action == "list":
             return JobPostingListSerializer
-        if self.action == "retrieve":
-            return JobPostingDetailSerializer
-        return JobPostingSerializer
-
+        return JobPostingDetailSerializer
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -114,4 +115,4 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
     permission_classes = [IsRecruiterOrAdmin]
-    http_method_names = ['get', 'post', 'patch', 'delete']
+    http_method_names = ["get", "post", "patch", "delete"]
